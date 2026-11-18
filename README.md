@@ -45,7 +45,7 @@ pip install -r requirements.txt
    ```bash
    python src/load_db.py
    ```
-   This creates `data/olist.db` and prints the row counts. The database and the CSVs are not in git.
+   This creates `data/olist.db` and prints the row counts. The database and the plain CSVs are not in git. Gzipped copies of the CSVs are in `data/raw_gz/` (about 42 MB, made with `python src/load_db.py --pack`); when `data/raw/` is missing, `load_db.py` builds from those instead.
 2. **API key.** The key is read only from the `GROQ_API_KEY` environment variable. Copy `.env.example` to `.env` and put your own Groq key in it, or set the variable in your shell (PowerShell: `$env:GROQ_API_KEY = "..."`). The key is never stored in code or committed (`.env` is in `.gitignore`).
 3. **Offline mode.** Without a key, everything runs from the cached model replies in `logs/cache/`: add `--offline` to any evaluation command, or tick *Offline demo mode* in the app's sidebar.
 
@@ -79,6 +79,8 @@ streamlit run app/app.py
 Note: `run_eval.py` writes a new results file on every run, and the reports use the newest file per version. Every command, in order, is in [docs/report/reproducibility.md](docs/report/reproducibility.md).
 
 **Reproducibility.** The cached results reproduce: every model reply is saved in `logs/cache/`, so `--offline` gives the same SQL for every question without calling the API, and the stored results files are what every reported number is computed from. Re-executing that SQL offline can still give a different verdict on a busy machine, because each query is stopped after 10 seconds and a few correct queries take several seconds. In the last offline re-score (`python eval/rescore_offline.py`, output in `logs/recheck/offline_rescore_20261118.txt`), 731 of 760 stored verdicts matched; the other 29 timed out under load, or needed a repair call that a timeout triggers and that is not in the cache. Queries spot-checked on their own finished in 1.7–6.8 s.
+
+**Deploying on Streamlit Community Cloud:** main file `app/app.py`, Python 3.12. On first start the app builds `data/olist.db` from `data/raw_gz/` (it shows a spinner; about a minute on a small machine). For live answers add `GROQ_API_KEY = "..."` under the app's *Settings → Secrets*; without it the app starts in offline demo mode and uses only the cached answers.
 
 The app opens at http://localhost:8501. Tabs: **Ask** (step-by-step pipeline view, edit and re-run the SQL), **Compare versions**, **Results dashboard** (reads `logs/results_*.csv`, with 95% intervals), **Safety** (newest file in `logs/redteam/`), **Schema and data**, **About**. The demo script is in [docs/demo_script.md](docs/demo_script.md).
 

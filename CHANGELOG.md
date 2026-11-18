@@ -18,6 +18,11 @@ Prompt-level detail is in [prompts/CHANGELOG.md](prompts/CHANGELOG.md); validato
 - **2026-10-31**: settings in one place (`src/config.py`) and a schema reader (`src/schema.py`) that builds the
   `CREATE TABLE` and names-only schema text from the database.
 
+- **2026-11-18**: gzipped copies of the 9 CSVs in `data/raw_gz/` (`python src/load_db.py --pack`). `load_db.py`
+  builds from them when `data/raw/` is missing, into a temporary file first. A database built this way has the same
+  schema text and the same rows in 8 of 9 tables; `geolocation` latitude/longitude differ only in the last binary
+  digit (at most 1.4e-14) from the existing local file, and no gold query uses that table.
+
 ## Safety
 
 - **2026-10-31**: SQL validator (`src/validate.py`): one statement, SELECT or WITH first, no comments, no write or
@@ -67,6 +72,8 @@ Prompt-level detail is in [prompts/CHANGELOG.md](prompts/CHANGELOG.md); validato
 
 - **2026-11-08**: Streamlit demo (`app/`, theme in `.streamlit/config.toml`) with Ask, Compare versions, Results
   dashboard, Safety, Schema and data, and About tabs; offline demo mode uses only cached answers.
+- **2026-11-18**: the app builds `data/olist.db` from `data/raw_gz/` on first start when the database is missing
+  (for Streamlit Community Cloud), and shows team AskBase in the header.
 - **2026-11-09**: app updated (`app/app.py`, `app/data.py`, `app/ui.py` last changed 2026-11-09), including v5 in the
   version colours.
 
