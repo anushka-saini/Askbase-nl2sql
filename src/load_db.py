@@ -1,14 +1,21 @@
 # load the olist csvs from data/raw into data/olist.db
 # table name = file name without "olist_" and "_dataset"
 # column names are kept exactly as in the csv files (even the typos like "lenght")
+# if data/raw/ is not there (e.g. on streamlit cloud), the gzipped copies in data/raw_gz/ are used instead
+#   python src/load_db.py          build data/olist.db
+#   python src/load_db.py --pack   write data/raw_gz/*.csv.gz from data/raw/ (to commit for deployment)
 
+import gzip
+import shutil
 import sqlite3
+import sys
 from pathlib import Path
 
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw"
+GZ = ROOT / "data" / "raw_gz"
 DB = ROOT / "data" / "olist.db"
 
 FILES = {
@@ -68,20 +75,43 @@ def read_csv(path):
     return df
 
 
-def main():
-    missing = [f for f in FILES.values() if not (RAW / f).exists()]
+def source(fname):
+    # the plain csv if it is there, else the gzipped copy (pandas reads .gz directly)
+    if (RAW / fname).exists():
+        return RAW / fname
+    if (GZ / (fname + ".gz")).exists():
+        return GZ / (fname + ".gz")
+    return None
+
+
+def can_build():
+    return all(source(f) for f in FILES.values())
+
+
+def pack():
+    GZ.mkdir(parents=True, exist_ok=True)
+    for fname in FILES.values():
+        with open(RAW / fname, "rb") as f, gzip.open(GZ / (fname + ".gz"), "wb", compresslevel=9) as g:
+            shutil.copyfileobj(f, g)
+        print(f"{fname + '.gz':45s} {(GZ / (fname + '.gz')).stat().st_size / 1e6:6.1f} MB")
+
+
+def main(db=DB):
+    missing = [f for f in FILES.values() if not source(f)]
     if missing:
-        print("Missing csv files in data/raw/:")
+        print("Missing csv files in data/raw/ (or .gz copies in data/raw_gz/):")
         for f in missing:
             print("  ", f)
         raise SystemExit(1)
 
-    if DB.exists():
-        DB.unlink()
-    con = sqlite3.connect(DB)
+    # build into a temp file first, so a half-built db is never left at data/olist.db
+    tmp = Path(str(db) + ".building")
+    if tmp.exists():
+        tmp.unlink()
+    con = sqlite3.connect(tmp)
 
     for name, fname in FILES.items():
-        df = read_csv(RAW / fname)
+        df = read_csv(source(fname))
         df.to_sql(name, con, index=False)
         print(f"{name:36s} {len(df):>9,} rows")
 
@@ -90,13 +120,17 @@ def main():
     con.commit()
 
     # double check counts from the db itself
-    print("\nrow counts read back from olist.db:")
+    print("\nrow counts read back from the new db:")
     for name in FILES:
         n = con.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
         print(f"{name:36s} {n:>9,}")
     con.close()
-    print(f"\nsaved {DB}")
+    tmp.replace(db)
+    print(f"\nsaved {db}")
 
 
 if __name__ == "__main__":
-    main()
+    if "--pack" in sys.argv:
+        pack()
+    else:
+        main()

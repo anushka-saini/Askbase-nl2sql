@@ -4,6 +4,7 @@
 # data (csvs are large, db is rebuilt by src/load_db.py)
 data/raw/
 data/olist.db
+data/*.building
 
 # python
 __pycache__/

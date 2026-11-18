@@ -31,10 +31,25 @@ def html(s):
 
 html(ui.CSS)
 
+
+@st.cache_resource(show_spinner=False)
+def build_db():
+    # runs once per server process: builds data/olist.db from data/raw_gz/ (used on streamlit cloud, where the db is not in git)
+    import load_db
+    load_db.main(config.DB)
+    return True
+
+
 if not config.DB.exists():
-    html(ui.callout("fail", "Database not found",
-                    "data/olist.db is missing. Put the Olist CSVs in data/raw/ and run: python src/load_db.py"))
-    st.stop()
+    import load_db
+    if load_db.can_build():
+        with st.spinner("First start: building the Olist database from data/raw_gz/ (about a minute)..."):
+            build_db()
+    if not config.DB.exists():
+        html(ui.callout("fail", "Database not found",
+                        "data/olist.db is missing. Put the Olist CSVs in data/raw/ (or the gzipped copies in "
+                        "data/raw_gz/) and run: python src/load_db.py"))
+        st.stop()
 
 KEY = data.api_key_set()
 st.session_state.setdefault("version", "v4")
