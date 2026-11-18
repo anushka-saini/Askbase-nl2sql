@@ -1,0 +1,15 @@
+%% How the NL-to-SQL task is split between the model and plain code.
+%% Only two sub-tasks are done by the LLM (inside one reply, plus the optional repair reply); everything else is deterministic code.
+flowchart LR
+    T["Answer a business question<br/>from the Olist database"] --> A["Know the schema<br/>src/schema.py reads it from the db<br/>(code)"]
+    T --> B["Write one SELECT + a one-line explanation<br/>or reply CANNOT_ANSWER<br/>(LLM, prompt P1)"]
+    T --> C["Check the SQL is safe and well-formed<br/>src/validate.py<br/>(code)"]
+    T --> D["Run it without changing anything<br/>src/run_sql.py, read-only<br/>(code)"]
+    T --> E["Fix a broken query using the error<br/>(LLM, prompt P2, v4 only, max 2)"]
+    T --> F["Show SQL, rows and explanation<br/>app/app.py<br/>(code)"]
+    T --> G["Measure correctness<br/>eval/score.py compares result rows with the gold query<br/>(code, offline)"]
+    A --> B
+    B --> C --> D
+    D -- "invalid / error / empty" --> E --> C
+    D -- "ok" --> F
+    D --> G

@@ -1,0 +1,28 @@
+%% System architecture with the three safety layers and the v4 repair loop.
+%% Layer 1 = prompt rules, Layer 2 = src/validate.py, Layer 3 = src/run_sql.py.
+flowchart TD
+    U["User<br/>Streamlit app (app/app.py)<br/>or eval/run_eval.py"] --> BP["Prompt builder<br/>src/build_prompt.py + src/schema.py"]
+    BP --> L1
+    subgraph L1["Layer 1: prompt rules"]
+        R1["one SELECT only, never write,<br/>reply CANNOT_ANSWER if the schema cannot answer"]
+    end
+    L1 --> LLM["LLM wrapper src/llm.py<br/>sha256 cache in logs/cache/, call log logs/calls.csv,<br/>retries on rate limit / connection errors"]
+    LLM <--> G[("Groq API<br/>openai/gpt-oss-120b, temperature 0")]
+    LLM --> PA["parse reply<br/>src/pipeline.py"]
+    PA -- "CANNOT_ANSWER" --> OUTR["refused"]
+    PA --> L2
+    subgraph L2["Layer 2: validator (src/validate.py)"]
+        V["one statement, starts with SELECT or WITH,<br/>no comments, no write/admin keywords,<br/>no sqlite_* / pragma_* objects, no other schema,<br/>only tables that exist"]
+    end
+    L2 -- "unsafe → blocked (never repaired)" --> OUTB["blocked"]
+    L2 -- "broken → invalid" --> RL
+    L2 -- "passes" --> L3
+    subgraph L3["Layer 3: read-only connection (src/run_sql.py)"]
+        RO["mode=ro + PRAGMA query_only<br/>authorizer: reads only, no sqlite_* tables<br/>max 200 rows, 10 s time limit"]
+    end
+    L3 --> DB[("data/olist.db")]
+    L3 -- "error or 0 rows" --> RL{"v4 repair loop<br/>max 2 attempts"}
+    RL -- "repair prompt: original prompt + bad SQL + error" --> LLM
+    RL -- "limit reached / not v4" --> OUTE["error / empty"]
+    L3 -- "rows" --> OUT["SQL + rows + explanation shown"]
+    OUT -.-> SC["eval/score.py (offline):<br/>compare rows with the gold query"]

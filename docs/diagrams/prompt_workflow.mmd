@@ -1,0 +1,17 @@
+%% Prompt workflow of the final pipeline (v4): one generate prompt, plus the repair prompt in a loop.
+%% Matches src/build_prompt.py (build, build_repair) and src/pipeline.py (run_question, MAX_REPAIRS = 2).
+flowchart TD
+    Q["User question"] --> B["build(version, question)<br/>fills prompts/v4.txt:<br/>{schema} = CREATE TABLE text from data/olist.db<br/>{question} = the question"]
+    B --> P1["P1 generate prompt<br/>rules + schema + join keys + business rules<br/>+ 5 worked examples + question"]
+    P1 --> ASK["ask(prompt) in src/llm.py<br/>cache hit → saved reply<br/>cache miss → Groq API, then saved"]
+    ASK --> PARSE["parse(reply)<br/>→ SQL, one-line explanation,<br/>or CANNOT_ANSWER"]
+    PARSE --> R{"reply"}
+    R -- "CANNOT_ANSWER" --> REF["status: refused<br/>(final, never repaired)"]
+    R -- "SQL" --> CHK["check_and_run(sql)<br/>validator, then read-only run"]
+    CHK --> S{"status"}
+    S -- "ok" --> OK["rows + SQL + explanation shown"]
+    S -- "blocked (unsafe)" --> BLK["stopped, never repaired"]
+    S -- "invalid / error / empty" --> LIM{"version is v4 and<br/>repairs used < 2?"}
+    LIM -- "no" --> FAIL["final status shown with the error"]
+    LIM -- "yes" --> P2["P2 repair prompt: build_repair()<br/>fills prompts/repair.txt with<br/>the original prompt + the bad SQL + the error"]
+    P2 --> ASK

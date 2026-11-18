@@ -1,0 +1,28 @@
+%% Inputs, outputs and the files they come from or go to.
+flowchart LR
+    subgraph IN["Inputs"]
+        Q["question (app text box, or eval/test_set.json)"]
+        V["prompt version v0–v5 (prompts/*.txt)"]
+        DB[("data/olist.db<br/>built from data/raw/*.csv")]
+        K["GROQ_API_KEY (env var / .env)<br/>not needed with --offline"]
+    end
+    subgraph RUN["src/pipeline.py run_question()"]
+        PR["prompt text"] --> LLM["llm.ask()"] --> SQL["SQL + explanation"] --> VAL["validate()"] --> EX["run_sql.run()"]
+    end
+    subgraph OUT["Outputs"]
+        ROWS["result rows (≤ 200) + status"]
+        CACHE[("logs/cache/&lt;sha256&gt;.json<br/>saved model replies")]
+        CALLS[("logs/calls.csv<br/>one row per call")]
+        RES[("logs/results_&lt;version&gt;_&lt;split&gt;_&lt;time&gt;.csv<br/>one row per question and repeat, pass / strict_pass")]
+        REP[("docs/report/results.json, figures,<br/>logs/accuracy_ci_*.csv, logs/significance_*.csv")]
+    end
+    Q --> PR
+    V --> PR
+    DB --> PR
+    K --> LLM
+    LLM <--> CACHE
+    LLM --> CALLS
+    DB --> EX
+    EX --> ROWS
+    ROWS -- "eval/run_eval.py + eval/score.py" --> RES
+    RES -- "eval/stats.py, significance.py, export_assets.py" --> REP
