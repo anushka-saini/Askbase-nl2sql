@@ -1,4 +1,4 @@
-score tests run at 2026-11-10 00:31:44
+score tests run at 2026-11-18 18:13:29
 
 == 1. same_result() ==
 PASS  row order and column names ignored                             
