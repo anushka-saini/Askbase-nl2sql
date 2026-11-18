@@ -22,7 +22,7 @@ from run_redteam import pipeline_layer, run_all
 from score import METRIC_HELP, same_result, score_item, summarize
 from stats import boot
 
-st.set_page_config(page_title="SchemaSense", page_icon=":material/database:", layout="wide")
+st.set_page_config(page_title="SchemaSense · AskBase", page_icon=":material/database:", layout="wide")
 
 
 def html(s):
@@ -86,7 +86,7 @@ def gold_mark(question, out):
 # ---------------- sidebar ----------------
 with st.sidebar:
     html('<div class="hero"><h1 style="font-size:1.25rem">SchemaSense</h1>'
-         '<p style="margin:0">Safe NL-to-SQL on Olist</p></div>')
+         '<p style="margin:0">Safe NL-to-SQL on Olist · team AskBase</p></div>')
     st.toggle("Offline demo mode (cached only)", key="offline",
               help="Only use answers saved in logs/cache. No API calls, no key needed.")
     if not KEY and not st.session_state.offline:
@@ -101,6 +101,7 @@ with st.sidebar:
          + ui.side("API key", "set" if KEY else "not set"))
 
 html('<div class="hero"><h1>SchemaSense: safe natural-language-to-SQL</h1>'
+     '<p>Team AskBase (PE-B01-16) · Prompt Engineering, Bennett University</p>'
      '<p>Ask the Olist e-commerce database a question in plain English. An LLM writes one SELECT query, '
      'a validator checks it, and it runs on a read-only copy of the data.</p></div>')
 
