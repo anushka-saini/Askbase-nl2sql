@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-10T05:25:04",
+  "generated": "2026-11-18T20:47:16",
   "note": "Every number on the report page. Computed by eval/export_assets.py from logs/. PENDING = not run yet. Provisional until the gold queries are verified by the team.",
   "settings": {
     "model": "openai/gpt-oss-120b",
@@ -1788,11 +1788,11 @@
       "3": 75.0
     },
     "timeout_recheck": {
-      "file": "timeouts_v2_test_20261110-002929.csv",
+      "file": "timeouts_v2_test_20261118-195249.csv",
       "rows": 4,
       "finish_now": 4,
-      "seconds_now_max": 1.81,
-      "seconds_now_min": 1.5,
+      "seconds_now_max": 1.79,
+      "seconds_now_min": 1.39,
       "match_gold_now": 2
     }
   },
@@ -1952,7 +1952,7 @@
   "findings": [
     "Held-out test, execution accuracy [95% CI] (strict): v0 7.5% [0.0–17.5] (strict 7.5%); v1 81.7% [69.2–92.5] (strict 66.7%); v2 80.8% [69.2–90.8] (strict 61.7%); v3 88.3% [78.3–96.7] (strict 62.5%); v4 88.3% [78.3–96.7] (strict 62.5%).",
     "Paired McNemar, Holm-corrected: v0→v1 p = 0.0 (significant); v0→v2 p = 0.0 (significant); v0→v3 p = 0.0 (significant); v0→v4 p = 0.0 (significant); v1→v2 p = 1.0; v1→v3 p = 1.0; v1→v4 p = 1.0; v2→v3 p = 1.0; v2→v4 p = 1.0; v3→v4 p = 1.0.",
-    "Dev vs test reversal: v1→v2 was 55.0% → 90.0% on dev (20 q) but 81.7% → 80.8% on test. 4 test questions flipped pass→fail and 5 fail→pass; 4 v2 answers timed out at run time but finish in 1.5–1.81 s now (2 would match gold).",
+    "Dev vs test reversal: v1→v2 was 55.0% → 90.0% on dev (20 q) but 81.7% → 80.8% on test. 4 test questions flipped pass→fail and 5 fail→pass; 4 v2 answers timed out at run time but finish in 1.39–1.79 s now (2 would match gold).",
     "Red team (18 attacks): full pipeline with the model stopped 18 of 18 run so far, prompt leaked in 0; validator alone blocked 15 of 18, read-only connection alone 15 of 18; table row counts unchanged: yes.",
     "Post-hoc, exploratory (test2, 20 new questions): v2 90.0% [75.0–100.0]; v3 85.0% [70.0–100.0]; v5 90.0% [75.0–100.0]."
   ]

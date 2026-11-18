@@ -127,7 +127,9 @@ def limitations(t):
         "two is answers that had the right rows plus extra columns, not wrong answers.",
         "- **Query time limit and machine load.** Generated SQL is stopped after 10 seconds (a safety limit). Some "
         "correct queries take about 4 seconds on an idle machine, so on a busy machine they can time out and count "
-        "as errors. See docs/report/dev_test_reversal.md for the v2 test rows where this happened.",
+        "as errors. See docs/report/dev_test_reversal.md for the v2 test rows where this happened. The same applies "
+        "to offline re-execution: the cached results reproduce, but re-running their SQL can differ under load "
+        "(731 of 760 stored verdicts matched in the last offline re-score, logs/recheck/offline_rescore_20261118.txt).",
         "- **Execution accuracy can pass a wrong query** that happens to return the same rows as the gold query, "
         "and fails a correct query that formats a value differently (e.g. a percentage vs a fraction).",
     ]

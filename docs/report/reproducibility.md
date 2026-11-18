@@ -20,7 +20,8 @@ Python packages used for these files: groq 1.7.0, pandas 3.1.0, streamlit 1.66.1
 
 - `logs/cache/` holds 762 model replies, one JSON file per call. The file name is the SHA-256 of (model, settings, prompt text, repeat number), so the same prompt with the same settings always reads the same reply, and a different model never mixes in.
 - `logs/calls.csv` logs every call, cached or not (762 live API calls, 914,124 tokens so far).
-- `--offline` reads only from the cache and never calls the API. Every result in `logs/` can be re-scored this way, e.g. after a gold query is fixed.
+- `--offline` reads only from the cache and never calls the API, so the cached results reproduce: the same prompt always gives the same saved reply and SQL, and the stored `logs/results_*.csv` files are what every reported number is computed from. Every result can be re-scored this way, e.g. after a gold query is fixed.
+- Re-executing the SQL offline can still give a different verdict on a busy machine: each query is stopped after 10 seconds, and some correct queries take several seconds. In the last offline re-score (`python eval/rescore_offline.py`, output in `logs/recheck/offline_rescore_20261118.txt`) 731 of 760 stored verdicts matched; the other 29 timed out under load, or needed a repair call that a timeout triggers and that is not in the cache. Re-score on an idle machine, and compare against the stored files rather than a re-run.
 - Repeats at temperature 0 are separate cache entries (the repeat number is in the key), so each repeat is a real separate call.
 
 ## Exact commands
