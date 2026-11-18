@@ -18,15 +18,15 @@ The core of the project is the **prompt experiment**: the model and its settings
 - **Faculty:** Dr. Sonal Kukreja
 - **Repository:** https://github.com/anushka-saini/schemasense-nl2sql
 
-| name | roll number | role | tasks |
-|---|---|---|---|
-| Anushka Saini (team leader) | S24CSEU1046 | | |
-| Devanshi Papneja | S24CSEU0824 | | |
-| Divyangana Jain | S24CSEU0856 | | |
+| name | roll number |
+|---|---|
+| Anushka Saini (team leader) | S24CSEU1046|
+| Devanshi Papneja | S24CSEU0824|
+| Divyangana Jain | S24CSEU0856|
 
 Who did what, with evidence: [docs/contribution_log.md](docs/contribution_log.md).
 
-**Prototype:** [PROTOTYPE_LINK]
+**Prototype:** https://schemasense-nl2sql-2fnmqvdehcyy9jphkq5m9t.streamlit.app/
 
 **Demo notebook (outputs saved):** [code/askbase_demo.ipynb](code/askbase_demo.ipynb) replays real cached runs of the final pipeline: six held-out test questions with their SQL, validation status, rows and pass/fail against gold, real red-team attacks, and the results table. It opens on GitHub with all outputs shown; the database is not included because of its size.
 
