@@ -1,0 +1,46 @@
+offline re-score run on 2026-11-18 (cached answers only, no API calls, results files not changed). Made with a one-off script; the same logic is saved as eval/rescore_offline.py.
+
+v0  dev   results_v0_dev_20261108-142653.csv: 20/20 verdicts reproduced
+v0  test  results_v0_test_20261108-143212.csv: 120/120 verdicts reproduced
+v1  dev   results_v1_dev_20261108-142654.csv: 18/20 verdicts reproduced
+v1  test  results_v1_test_20261108-144033.csv: 117/120 verdicts reproduced
+v2  dev   results_v2_dev_20261108-142808.csv: 18/20 verdicts reproduced
+v2  test  results_v2_test_20261108-145050.csv: 117/120 verdicts reproduced
+v2  test2 results_v2_test2_20261109-234454.csv: 20/20 verdicts reproduced
+v3  dev   results_v3_dev_20261108-142926.csv: 20/20 verdicts reproduced
+v3  test  results_v3_test_20261109-233548.csv: 106/120 verdicts reproduced
+v3  test2 results_v3_test2_20261110-004923.csv: 19/20 verdicts reproduced
+v4  dev   results_v4_dev_20261108-143039.csv: 19/20 verdicts reproduced
+v4  test  results_v4_test_20261109-233843.csv: 117/120 verdicts reproduced
+v5  test2 results_v5_test2_20261110-010702.csv: 20/20 verdicts reproduced
+TOTAL 731/760 reproduced
+v1 dev J04 r1: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v1 dev J10 r1: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v1 test J05 r2: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v1 test F04 r2: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v1 test F04 r3: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v2 dev F03 r1: stored ok/True -> now ok/False 
+v2 dev M04 r1: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v2 test M05 r2: stored error/False -> now ok/True 
+v2 test A09 r3: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v2 test F06 r3: stored error/False -> now ok/True 
+v3 test M06 r1: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test J02 r2: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test J05 r2: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test A03 r2: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test A09 r2: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test F04 r2: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test F05 r2: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test F06 r2: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test J05 r3: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test A01 r3: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test A03 r3: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test A09 r3: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test F04 r3: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test F06 r3: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v3 test2 T2F03 r1: stored ok/True -> now error/False OperationalError: query timed out after 10s
+v4 dev F03 r1: stored ok/True -> now llm_error/False RuntimeError: Offline mode: this prompt is not in the cache.
+v4 test J05 r2: stored ok/True -> now llm_error/False RuntimeError: Offline mode: this prompt is not in the cache.
+v4 test F06 r2: stored ok/True -> now llm_error/False RuntimeError: Offline mode: this prompt is not in the cache.
+v4 test F06 r3: stored ok/True -> now llm_error/False RuntimeError: Offline mode: this prompt is not in the cache.
+
