@@ -37,7 +37,7 @@ Held-out test: 40 questions, 3 repeats per question. Execution accuracy means th
 
 | name | roll number |
 |---|---|
-| Anushka Saini (team leader) | S24CSEU1046|
+| Anushka Saini  | S24CSEU1046|
 | Devanshi Papneja | S24CSEU0824|
 | Divyangana Jain | S24CSEU0856|
 
