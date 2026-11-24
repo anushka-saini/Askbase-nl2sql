@@ -22,11 +22,19 @@ from run_redteam import pipeline_layer, run_all
 from score import METRIC_HELP, same_result, score_item, summarize
 from stats import boot
 
-st.set_page_config(page_title="SchemaSense · AskBase", page_icon=":material/database:", layout="wide")
+st.set_page_config(page_title="AskBase", layout="wide")
 
 
 def html(s):
     st.markdown(s, unsafe_allow_html=True)
+
+
+def metric(col, label, value, sub=""):
+    # plain number or text with a small caption under it
+    with col:
+        st.metric(label, value)
+        if sub:
+            st.caption(sub)
 
 
 html(ui.CSS)
@@ -53,7 +61,7 @@ if not config.DB.exists():
 
 KEY = data.api_key_set()
 st.session_state.setdefault("version", "v4")
-st.session_state.setdefault("offline", not KEY)
+st.session_state.setdefault("offline", True)  # demo mode is the default, even when a key exists
 st.session_state.setdefault("question", "")
 st.session_state.setdefault("cmp_q", "")
 
@@ -88,20 +96,24 @@ def gold_mark(question, out):
     it = data.find_item(question)
     if it is None:
         return ""
+    hit = data.stored_pass(out["version"], it["id"])
+    if hit is not None:  # pass/fail read from the stored results file
+        return ui.badge("ok" if hit else "fail", f"{'Matches' if hit else 'Does not match'} the reference answer ({it['id']}, stored result)")
     if it["split"] != "dev":
-        return ui.badge("info", f"{it['id']} is a held-out test question: not scored here")
+        return ui.badge("info", f"{it['id']} is a held-out test question: no stored result for this version")
     res, err = safe(score_item, it, out)
     if err:
         return ui.badge("skip", "Could not score: " + err[:60])
     if res["pass"]:
-        return ui.badge("ok", f"✓ Matches the gold answer ({it['id']}, {res['matched']})")
-    return ui.badge("fail", f"✕ Does not match the gold answer ({it['id']})")
+        return ui.badge("ok", f"Matches the reference answer ({it['id']}, {res['matched']})")
+    return ui.badge("fail", f"Does not match the reference answer ({it['id']})")
 
 
 # ---------------- sidebar ----------------
 with st.sidebar:
-    html('<div class="hero"><h1 style="font-size:1.25rem">SchemaSense</h1>'
-         '<p style="margin:0">Safe NL-to-SQL on Olist · team AskBase</p></div>')
+    html('<div class="brand"><div class="logo">A</div><div><div class="nm">AskBase</div>'
+         '<div class="tg">Safe NL-to-SQL on Olist</div></div></div>')
+    st.divider()
     st.toggle("Offline demo mode (cached only)", key="offline",
               help="Only use answers saved in logs/cache. No API calls, no key needed.")
     if not KEY and not st.session_state.offline:
@@ -109,22 +121,24 @@ with st.sidebar:
     db_mb = config.DB.stat().st_size / 1e6
     html(ui.side("Model", config.MODEL) + ui.side("Temperature", config.TEMPERATURE)
          + ui.side("Reasoning effort", config.REASONING_EFFORT)
-         + ui.side("top_p / max tokens", f"{config.TOP_P} / {config.MAX_COMPLETION_TOKENS}")
          + ui.side("Database", f"{config.DB.name} ({db_mb:.0f} MB, read-only)")
          + ui.side("Active prompt version", st.session_state.version)
          + ui.side("Cached responses", data.cache_count())
          + ui.side("API key", "set" if KEY else "not set"))
 
-html('<div class="hero"><h1>SchemaSense: safe natural-language-to-SQL</h1>'
-     '<p>Team AskBase (PE-B01-16) · Prompt Engineering, Bennett University</p>'
-     '<p>Ask the Olist e-commerce database a question in plain English. An LLM writes one SELECT query, '
-     'a validator checks it, and it runs on a read-only copy of the data.</p></div>')
+html(ui.appbar(st.session_state.offline))
 
 tabs = st.tabs(["Ask", "Compare versions", "Results dashboard", "Safety", "Schema and data", "About"])
 
 
 # ---------------- shared result view ----------------
 def show_result(out, kp, editable=False):
+    s0 = out["status"]
+    mk = gold_mark(out["question"], out)
+    html('<div class="rbar">'
+         f'<div><span class="k">Status</span>{ui.status_badge(s0)}</div>'
+         + (f'<div><span class="k">Reference check</span>{mk}</div>' if mk else "")
+         + (f'<div><span class="k">Source</span><span class="muted">stored run</span></div>' if out["cached"] else "") + '</div>')
     cols = st.columns(len(out["steps"]))
     for c, s in zip(cols, out["steps"]):
         with c:
@@ -146,16 +160,11 @@ def show_result(out, kp, editable=False):
         html(ui.callout("warn", "No rows", "The query ran but returned no rows."))
 
     lat_sub = "original API call, now served from cache" if out["cached"] else "this call"
-    c = st.columns(5)
-    c[0].markdown(ui.card("Status", ui.STATUS.get(s, ("", s))[1]), unsafe_allow_html=True)
-    c[1].markdown(ui.card("Repairs used", out["retries"], "v4 only, max 2"), unsafe_allow_html=True)
-    c[2].markdown(ui.card("Latency", f"{out['latency_s']:.2f} s", lat_sub), unsafe_allow_html=True)
-    c[3].markdown(ui.card("Tokens", f"{out['tokens']:,}", "prompt + completion, all attempts"), unsafe_allow_html=True)
-    c[4].markdown(ui.card("Source", "Cache" if out["cached"] else "Groq API",
-                          "from logs/cache" if out["cached"] else "live call"), unsafe_allow_html=True)
-    marks = (ui.badge("info", "Served from cache") + " " if out["cached"] else "") + gold_mark(out["question"], out)
-    if marks.strip():
-        html(f'<div style="margin:.7rem 0">{marks}</div>')
+    c = st.columns(4)
+    metric(c[0], "Repairs used", out["retries"], "v4 only, max 2")
+    metric(c[1], "Latency", f"{out['latency_s']:.2f} s", lat_sub)
+    metric(c[2], "Tokens", f"{out['tokens']:,}", "prompt + completion, all attempts")
+    metric(c[3], "Source", "Cache" if out["cached"] else "Groq API", "from logs/cache" if out["cached"] else "live call")
 
     if out["sql"]:
         st.markdown("**Generated SQL**")
@@ -185,34 +194,42 @@ def show_result(out, kp, editable=False):
 
 
 # ---------------- tab 1: ask ----------------
-def set_question(q):
-    st.session_state.question = q
+def pick_question(tier):
+    qid = st.session_state.get(f"q_pick_{tier}")
+    if qid:
+        st.session_state.question = data.item_by_id(qid)["question"]
 
 
 with tabs[0]:
-    left, right = st.columns([3, 2], gap="large")
-    with left:
-        st.text_area("Your question", key="question", height=100,
+    left, right = st.columns([3, 2], gap="medium")
+    with left, st.container(border=True):
+        html(ui.section("Ask a question", "Type your own, or pick one from the test questions on the right."))
+        st.text_area("Your question", key="question", height=100, label_visibility="collapsed",
                      placeholder="e.g. How many orders were delivered in 2018?")
         a, b = st.columns([1, 1], vertical_alignment="bottom")
         a.selectbox("Prompt version", VERSIONS, key="version",
                     help="v0 control, v1 names only, v2 schema + rules, v3 + examples, v4 + repair loop. "
                          "See the About tab.")
         go = b.button("Run pipeline", type="primary", width="stretch")
-    with right:
-        groups = data.samples()
-        if not any(groups.values()):
-            html(ui.empty("No sample questions", "eval/test_set.json was not found."))
+    with right, st.container(border=True):
+        html(ui.section("Test questions"))
+        items = data.test_set()
+        if not items:
+            html(ui.empty("No questions", "eval/test_set.json was not found."))
         else:
-            g = st.segmented_control("Sample questions (dev split)", list(groups), default="Simple", key="sample_group")
-            for it in groups.get(g or "Simple", []):
-                st.button(it["question"], key="s_" + it["id"], type="tertiary",
-                          on_click=set_question, args=(it["question"],))
+            st.caption(f"All {len(items)} test questions, grouped by type. Pick one, then press Run.")
+            tier = st.selectbox("Question type", data.TIER_ORDER, key="q_tier",
+                                format_func=lambda t: data.TIER_NAMES.get(t, t))
+            pool = [it for it in items if it["tier"] == tier]
+            st.selectbox(f"{data.TIER_NAMES.get(tier, tier)} questions ({len(pool)})", [""] + [it["id"] for it in pool],
+                         key=f"q_pick_{tier}", on_change=pick_question, args=(tier,),
+                         format_func=lambda i: "Choose a question" if not i else
+                         f"{i} · {data.item_by_id(i)['question']} ({data.item_by_id(i)['split']})")
 
     if go:
         q = st.session_state.question.strip()
         if not q:
-            html(ui.callout("warn", "Type a question first", "or click one of the samples."))
+            html(ui.callout("warn", "Type a question first", "or pick one from the list."))
         else:
             with st.spinner("Running the pipeline..."):
                 out, err = safe(run_question, q, st.session_state.version, offline=st.session_state.offline)
@@ -225,10 +242,9 @@ with tabs[0]:
         html(ui.callout("fail", "Something went wrong", st.session_state.ask_err))
     out = st.session_state.get("ask_out")
     if out:
-        st.divider()
+        html(ui.section("Result"))
         show_result(out, "ask_")
 
-        st.divider()
         st.markdown("#### Edit and re-run the SQL")
         html('<div class="muted">Your edited SQL goes through the same validator and the same read-only connection.</div>')
         st.text_area("SQL to run", key="edit_sql", height=160, label_visibility="collapsed")
@@ -256,14 +272,15 @@ with tabs[0]:
 # ---------------- tab 2: compare ----------------
 def pick_sample():
     if st.session_state.cmp_pick:
-        st.session_state.cmp_q = st.session_state.cmp_pick
+        st.session_state.cmp_q = data.item_by_id(st.session_state.cmp_pick)["question"]
 
 
 with tabs[1]:
     html('<div class="muted">Runs one question through v1, v2, v3 and v4 side by side. v4 has the same prompt text as v3, '
          'so its first answer comes from the same cache entry; any difference comes from the repair loop.</div>')
-    dev = [it["question"] for it in data.test_set() if it["split"] == "dev"]
-    st.selectbox("Pick a dev question (optional)", [""] + dev, key="cmp_pick", on_change=pick_sample)
+    st.selectbox("Pick a question (optional, all 60)", [""] + [it["id"] for it in data.test_set()], key="cmp_pick",
+                 on_change=pick_sample,
+                 format_func=lambda i: "" if not i else f"{i} ({data.TIER_NAMES[data.item_by_id(i)['tier']]}) · {data.item_by_id(i)['question']}")
     st.text_input("Question", key="cmp_q")
     if st.button("Compare v1 to v4", type="primary"):
         q = st.session_state.cmp_q.strip()
@@ -303,11 +320,13 @@ with tabs[1]:
         cols = st.columns(4, gap="medium")
         for c, (v, o) in zip(cols, res.items()):
             with c:
-                html(f'<h4 style="margin:.2rem 0">{ui.dot(v)}{v}</h4>')
+                st.markdown(f"**{v}**")
                 n = "-" if o["rows"] is None else len(o["rows"])
                 html(ui.status_badge(o["status"]) + " " + ui.badge("info", f"Result {group[v]}")
                      + (" " + ui.badge("info", "cached") if o.get("cached") else ""))
-                html(ui.card("Rows", n, o.get("error", "")[:90] if o["status"] != "ok" else ""))
+                st.metric("Rows", n)
+                if o["status"] != "ok" and o.get("error"):
+                    st.caption(o["error"][:90])
                 mark = gold_mark(o["question"], o) if o["status"] != "llm_error" else ""
                 if mark:
                     html(f'<div style="margin:.5rem 0">{mark}</div>')
@@ -353,10 +372,9 @@ def dashboard(df):
         ok = run[run["status"] != "llm_error"]
         per_q = (ok["pass"].astype(str).str.lower() == "true").groupby(ok["id"]).mean().to_numpy()
         ci = " · 95% CI {:.1f}–{:.1f}%".format(*boot(per_q)) if len(per_q) else ""
-        c.markdown(ui.card(f"{v} · execution accuracy ({split})", acc,
-                           f"{run['id'].nunique()} questions × {run['repeat'].nunique()} repeat(s){ci}"
-                           + (f" · {m['llm_errors']} API errors left out" if m["llm_errors"] else "")),
-                   unsafe_allow_html=True)
+        metric(c, f"{v} · execution accuracy ({split})", acc,
+               f"{run['id'].nunique()} questions × {run['repeat'].nunique()} repeat(s){ci}"
+               + (f" · {m['llm_errors']} API errors left out" if m["llm_errors"] else ""))
 
     st.markdown(f"#### All metrics ({split} split)")
     mt = pd.DataFrame(summ).T.reset_index().rename(columns={"index": "version"})
@@ -451,16 +469,15 @@ with tabs[3]:
         ran = rt[rt["pipeline_layer"] != "not run"]
         blocked = (ran["pipeline_blocked"].astype(str).str.lower() == "true").sum()
         c = st.columns(4)
-        c[0].markdown(ui.card("Full pipeline", f"{blocked} / {len(ran)} blocked" if len(ran) else "Not run",
-                              f"{len(rt) - len(ran)} attack(s) not run (no API key)" if len(rt) - len(ran) else
-                              f"prompt version {rt['version'].iloc[0]}"), unsafe_allow_html=True)
+        metric(c[0], "Full pipeline", f"{blocked} / {len(ran)} blocked" if len(ran) else "Not run",
+               f"{len(rt) - len(ran)} attack(s) not run (no API key)" if len(rt) - len(ran) else
+               f"prompt version {rt['version'].iloc[0]}")
         layers = ran["pipeline_layer"].value_counts()
-        c[1].markdown(ui.card("Stopped at", " · ".join(f"{k}: {v}" for k, v in layers.items()) or "-",
-                              "which layer stopped each attack"), unsafe_allow_html=True)
-        c[2].markdown(ui.card("Validator alone", f"{(rt['validator_blocks'].astype(str) == 'True').sum()} / {len(rt)}",
-                              "attacker's SQL sent straight to the validator"), unsafe_allow_html=True)
-        c[3].markdown(ui.card("Read-only DB alone", f"{(rt['readonly_blocks'].astype(str) == 'True').sum()} / {len(rt)}",
-                              "validator skipped on purpose"), unsafe_allow_html=True)
+        metric(c[1], "Stopped at", " · ".join(f"{k}: {v}" for k, v in layers.items()) or "-", "which layer stopped each attack")
+        metric(c[2], "Validator alone", f"{(rt['validator_blocks'].astype(str) == 'True').sum()} / {len(rt)}",
+               "attacker's SQL sent straight to the validator")
+        metric(c[3], "Read-only DB alone", f"{(rt['readonly_blocks'].astype(str) == 'True').sum()} / {len(rt)}",
+               "validator skipped on purpose")
         unchanged = str(rt.get("tables_unchanged", pd.Series(["?"])).iloc[0])
         html(f'<div class="muted" style="margin:.6rem 0">Run at {rt["time"].max()} · file {rt["file"].iloc[0]} · '
              f'{len(rt)} attacks · all table row counts unchanged after the run: <b>{unchanged}</b></div>')
@@ -532,10 +549,9 @@ with tabs[4]:
     else:
         cols, counts, create = info
         c = st.columns(3)
-        c[0].markdown(ui.card("Tables", len(cols)), unsafe_allow_html=True)
-        c[1].markdown(ui.card("Rows in total", f"{sum(counts.values()):,}"), unsafe_allow_html=True)
-        c[2].markdown(ui.card("Database file", f"{config.DB.stat().st_size / 1e6:.0f} MB", config.DB.name),
-                      unsafe_allow_html=True)
+        metric(c[0], "Tables", len(cols))
+        metric(c[1], "Rows in total", f"{sum(counts.values()):,}")
+        metric(c[2], "Database file", f"{config.DB.stat().st_size / 1e6:.0f} MB", config.DB.name)
         st.markdown("#### Relationships")
         html('<div class="muted">Join keys are not declared in the database; they were checked by query '
              '(docs/data_notes.md, note 13). Dashed = joins that multiply rows.</div>')
@@ -590,3 +606,5 @@ with tabs[5]:
             "- SQLite and the Olist schema only.")
     st.markdown("#### Prompt version history")
     st.markdown(data.read_text(config.PROMPTS / "CHANGELOG.md") or "prompts/CHANGELOG.md not found.")
+
+html(ui.FOOTER)

@@ -76,6 +76,11 @@ Prompt-level detail is in [prompts/CHANGELOG.md](prompts/CHANGELOG.md); validato
   (for Streamlit Community Cloud), and shows team AskBase in the header.
 - **2026-11-09**: app updated (`app/app.py`, `app/data.py`, `app/ui.py` last changed 2026-11-09), including v5 in the
   version colours.
+- **2026-11-21**: the earlier-the-same-day redesign was reverted to the committed app (the redesign is saved in
+  `app_redesign_backup/`), then lightly polished: plain title and one-line purpose, demo-mode caption, status as plain text
+  instead of badges, `st.metric` for numbers, neutral callouts, footer. The Ask and Compare tabs now list all 60 test
+  questions by type with their IDs, and pass/fail marks are read from the stored `logs/results_*.csv`. Offline demo
+  mode is the default even when an API key exists. No new dependencies.
 
 ## Docs
 

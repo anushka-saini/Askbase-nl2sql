@@ -59,6 +59,27 @@ def find_item(question):
     return None
 
 
+def item_by_id(qid):
+    return next((it for it in test_set() if it["id"] == qid), None)
+
+
+@st.cache_data(ttl=10)
+def stored_passes():
+    """(version, question id, repeat) -> pass flag, from the newest results file per version and split"""
+    df = results()
+    if df.empty:
+        return {}
+    df = df[df["model"] == config.MODEL]
+    newest = df.groupby(["version", "split"])["run_id"].max()  # run_id ends with the time, so max = newest
+    df = df[df["run_id"].isin(newest.values)]
+    return {(v, i, int(r)): str(p).lower() == "true" for v, i, r, p in zip(df["version"], df["id"], df["repeat"], df["pass"])}
+
+
+def stored_pass(version, qid, repeat=1):
+    # True / False from the stored results file, or None when nothing is stored
+    return stored_passes().get((version, qid, repeat))
+
+
 @st.cache_data(ttl=10)
 def results():
     files = sorted(config.LOGS.glob("results_*.csv"))

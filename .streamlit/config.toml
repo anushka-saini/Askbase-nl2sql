@@ -1,18 +1,16 @@
 [theme]
 base = "dark"
-# one accent colour, everything else is greys
-primaryColor = "#3987e5"
-backgroundColor = "#0f1216"
-secondaryBackgroundColor = "#171b21"
-textColor = "#e6e8eb"
-borderColor = "#262c35"
+primaryColor = "#6366f1"
+backgroundColor = "#0b0f19"
+secondaryBackgroundColor = "#111827"
+textColor = "#e5e7eb"
+borderColor = "#1f2937"
 font = "sans-serif"
 baseFontSize = 15
 baseRadius = "0.6rem"
 showSidebarBorder = true
 # prompt versions v0..v4 always get these colours in this order
-# (checked for colour-blind separation against #0f1216)
-chartCategoricalColors = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"]
+chartCategoricalColors = ["#6366f1", "#f59e0b", "#10b981", "#38bdf8", "#f472b6", "#a3e635", "#9085e9", "#e66767"]
 
 [client]
 # no stack traces in the browser
