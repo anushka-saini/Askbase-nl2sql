@@ -9,7 +9,24 @@ The core of the project is the **prompt experiment**: the model and its settings
 - **Model:** `openai/gpt-oss-120b` on Groq, temperature 0, top_p 1, max_completion_tokens 2048, reasoning_effort medium (all in `src/config.py`)
 - **Safety:** three layers: prompt rules, a SQL validator and a read-only database connection ([docs/design.md](docs/design.md), diagrams in [docs/diagrams/](docs/diagrams))
 
-> **Status: provisional.** The 60 gold queries and the error labels were drafted with Claude's help and are **not verified** by the team yet (`verified: false` in `eval/test_set.json`; no verdicts filled in `review/gold_review.csv`). Two business-rule definitions are assumptions. Review sheets are in `review/`.
+> **Status: provisional.** The 60 gold queries and the error labels were drafted with Claude's help and are only **partly checked** by the team (`verified: false` in `eval/test_set.json`; verdicts are being filled in `review/gold_review.csv`). Two business-rule definitions are assumptions. Review sheets are in `review/`.
+
+## Results at a glance
+
+Held-out test: 40 questions, 3 repeats per question. Execution accuracy means the generated query returns the same result as the reference answer. Provisional until the reference answers are fully checked.
+
+| version | what it adds | test accuracy | 95% range | dev accuracy (20 q) |
+|---|---|---|---|---|
+| v0 | question only | 7.5% | 0.0–17.5 | 15.0% |
+| v1 | basic rules + table and column names | 81.7% | 69.2–92.5 | 55.0% |
+| v2 | real table layout + business rules | 80.8% | 69.2–90.8 | 90.0% |
+| v3 | + 5 worked examples | 88.3% | 78.3–96.7 | 90.0% |
+| v4 | + repair loop (max 2) | 88.3% | 78.3–96.7 | 90.0% |
+
+- Only v0 is clearly worse. v1 to v4 are too close to separate with 40 questions (paired tests, p = 1.0 among them).
+- Safety: all 18 red-team attacks were stopped by the full pipeline. The validator alone blocked 15 of 18 and the read-only database alone 15 of 18.
+- Cost: 762 live API calls and 914,124 tokens in total; every reply is cached for offline replay.
+- Every number comes from `docs/report/results.json`; full tables are in the Results section below.
 
 ## Team AskBase
 
@@ -47,7 +64,7 @@ pip install -r requirements.txt
    ```
    This creates `data/olist.db` and prints the row counts. The database and the plain CSVs are not in git. Gzipped copies of the CSVs are in `data/raw_gz/` (about 42 MB, made with `python src/load_db.py --pack`); when `data/raw/` is missing, `load_db.py` builds from those instead.
 2. **API key.** The key is read only from the `GROQ_API_KEY` environment variable. Copy `.env.example` to `.env` and put your own Groq key in it, or set the variable in your shell (PowerShell: `$env:GROQ_API_KEY = "..."`). The key is never stored in code or committed (`.env` is in `.gitignore`).
-3. **Offline mode.** Without a key, everything runs from the cached model replies in `logs/cache/`: add `--offline` to any evaluation command, or tick *Offline demo mode* in the app's sidebar.
+3. **Offline mode.** Without a key, everything runs from the cached model replies in `logs/cache/`: add `--offline` to any evaluation command, or use *Offline demo mode* in the app's sidebar (on by default).
 
 ## How to run
 
@@ -82,7 +99,7 @@ Note: `run_eval.py` writes a new results file on every run, and the reports use 
 
 **Deploying on Streamlit Community Cloud:** main file `app/app.py`, Python 3.12. On first start the app builds `data/olist.db` from `data/raw_gz/` (it shows a spinner; about a minute on a small machine). For live answers add `GROQ_API_KEY = "..."` under the app's *Settings → Secrets*; without it the app starts in offline demo mode and uses only the cached answers.
 
-The app opens at http://localhost:8501. Tabs: **Ask** (step-by-step pipeline view, edit and re-run the SQL), **Compare versions**, **Results dashboard** (reads `logs/results_*.csv`, with 95% intervals), **Safety** (newest file in `logs/redteam/`), **Schema and data**, **About**. The demo script is in [docs/demo_script.md](docs/demo_script.md).
+The app opens at http://localhost:8501. Tabs: **Ask** (pick any of the 60 test questions or type your own; step-by-step pipeline view with green/red reference check; edit and re-run the SQL), **Compare versions**, **Results dashboard** (reads `logs/results_*.csv`, with 95% intervals), **Safety** (newest file in `logs/redteam/`), **Schema and data**, **About**. The demo script is in [docs/demo_script.md](docs/demo_script.md).
 
 ## Repository layout
 
