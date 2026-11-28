@@ -41,7 +41,7 @@ Held-out test: 40 questions, 3 repeats per question. Execution accuracy means th
 | Devanshi Papneja | S24CSEU0824|
 | Divyangana Jain | S24CSEU0856|
 
-Who did what, with evidence: [docs/contribution_log.md](docs/contribution_log.md).
+
 
 **Prototype:** https://schemasense-nl2sql-2fnmqvdehcyy9jphkq5m9t.streamlit.app/
 
